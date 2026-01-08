@@ -123,7 +123,8 @@ body {
 }
 
 .btn-create {
-  padding: 0.75rem 1.25rem;
+  padding: 0.75rem;
+  min-width: 42px;
   background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
   color: white;
   border: none;
@@ -133,6 +134,10 @@ body {
   font-size: 1.25rem;
   transition: all 0.2s ease;
   box-shadow: 0 2px 8px rgba(59, 130, 246, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
 }
 
 .btn-create:hover {
