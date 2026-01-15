@@ -1,7 +1,6 @@
 export interface Room {
   id: string;
   name: string;
-  description?: string;
 }
 
 export interface Message {
@@ -14,16 +13,30 @@ export interface Message {
 
 export interface CreateRoomDto {
   name: string;
-  description?: string;
 }
 
 export interface CreateMessageDto {
   roomId: string;
-  sender: string;
+  sender?: string;
   content: string;
 }
 
 export interface JoinRoomDto {
   roomId: string;
   userId: string;
+}
+
+export interface AuthUser {
+  id: string;
+  username: string;
+}
+
+export interface RegisterDto {
+  username: string;
+  password: string;
+}
+
+export interface LoginDto {
+  username: string;
+  password: string;
 }

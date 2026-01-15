@@ -1,49 +1,73 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, OnModuleInit } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { randomUUID } from 'crypto';
 import { Room } from './entities/room.entity';
 import { Message } from './entities/message.entity';
 import { CreateRoomDto } from './dto/create-room.dto';
 import { CreateMessageDto } from './dto/create-message.dto';
-import { v4 as uuidv4 } from 'uuid';
+import { UpdateRoomDto } from './dto/update-room.dto';
 
 @Injectable()
-export class ChatService {
-  // In-memory storage for demonstration purposes. Use a real DB in production.
-  private rooms: Room[] = [];
+export class ChatService implements OnModuleInit {
+  constructor(
+    @InjectRepository(Room)
+    private roomRepository: Repository<Room>,
+  ) {}
+
+  // In-memory messages (not stored in DB per requirement)
   private messages: Message[] = [];
 
-  constructor() {
-    // Seed a default room
-    this.createRoom({ name: 'General', description: 'General discussion' });
+  async onModuleInit() {
+    // Seed a default room if none exist
+    const count = await this.roomRepository.count();
+    if (count === 0) {
+      await this.createRoom({ name: 'General' });
+      console.log('Default "General" room created.');
+    }
   }
 
-  createRoom(createRoomDto: CreateRoomDto): Room {
-    const room: Room = {
-      id: uuidv4(),
-      ...createRoomDto,
-    };
-    this.rooms.push(room);
-    return room;
+  async createRoom(createRoomDto: CreateRoomDto): Promise<Room> {
+    const room = this.roomRepository.create(createRoomDto);
+    return this.roomRepository.save(room);
   }
 
-  getRooms(): Room[] {
-    return this.rooms;
+  async getRooms(): Promise<Room[]> {
+    return this.roomRepository.find({ order: { createdAt: 'ASC' } });
   }
 
-  getRoom(roomId: string): Room | undefined {
-    return this.rooms.find((r) => r.id === roomId);
+  async getRoom(roomId: string): Promise<Room | null> {
+    return this.roomRepository.findOne({ where: { id: roomId } });
   }
 
-  addMessage(createMessageDto: CreateMessageDto): Message {
+  async addMessage(createMessageDto: CreateMessageDto): Promise<Message> {
     const message: Message = {
-      id: uuidv4(),
+      id: randomUUID(),
+      roomId: createMessageDto.roomId,
+      sender: createMessageDto.sender || 'Unknown',
+      content: createMessageDto.content,
       createdAt: new Date(),
-      ...createMessageDto,
     };
     this.messages.push(message);
+    console.log(`[Message Created] ID: ${message.id}, Sender: ${message.sender}, Room: ${message.roomId}`);
     return message;
   }
 
-  getMessagesForRoom(roomId: string): Message[] {
+  async getMessagesForRoom(roomId: string): Promise<Message[]> {
     return this.messages.filter((m) => m.roomId === roomId);
+  }
+
+  async updateRoom(roomId: string, updateRoomDto: UpdateRoomDto): Promise<Room | null> {
+    const room = await this.roomRepository.findOne({ where: { id: roomId } });
+    if (!room) return null;
+
+    if (updateRoomDto.name) room.name = updateRoomDto.name;
+
+    return this.roomRepository.save(room);
+  }
+
+  async deleteRoom(roomId: string): Promise<boolean> {
+    const result = await this.roomRepository.delete(roomId);
+    return result.affected > 0;
   }
 }

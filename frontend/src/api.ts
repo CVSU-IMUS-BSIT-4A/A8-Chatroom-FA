@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { CreateRoomDto, Message, Room } from './types/chat';
+import { CreateRoomDto, Message, Room, RegisterDto, LoginDto, AuthUser } from './types/chat';
 
 const API_URL = 'http://localhost:3000'; // Adjust if backend port differs
 
@@ -16,6 +16,25 @@ export const api = {
 
   getMessages: async (roomId: string): Promise<Message[]> => {
     const response = await axios.get<Message[]>(`${API_URL}/chat/rooms/${roomId}/messages`);
+    return response.data;
+  },
+
+  updateRoom: async (roomId: string, updates: { name?: string }): Promise<Room> => {
+    const response = await axios.patch<Room>(`${API_URL}/chat/rooms/${roomId}`, updates);
+    return response.data;
+  },
+
+  deleteRoom: async (roomId: string): Promise<void> => {
+    await axios.delete(`${API_URL}/chat/rooms/${roomId}`);
+  },
+
+  register: async (payload: RegisterDto): Promise<AuthUser> => {
+    const response = await axios.post<AuthUser>(`${API_URL}/auth/register`, payload);
+    return response.data;
+  },
+
+  login: async (payload: LoginDto): Promise<AuthUser> => {
+    const response = await axios.post<AuthUser>(`${API_URL}/auth/login`, payload);
     return response.data;
   }
 };
