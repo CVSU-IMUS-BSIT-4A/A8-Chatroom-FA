@@ -24,6 +24,21 @@ export const ChatInterface: React.FC = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const selectedRoomRef = useRef<Room | null>(null);
 
+  // Rehydrate auth state from localStorage on load
+  useEffect(() => {
+    const storedUser = localStorage.getItem('chatAuthUser');
+    if (storedUser) {
+      try {
+        const parsed = JSON.parse(storedUser) as AuthUser;
+        if (parsed?.id && parsed?.username) {
+          setAuthUser(parsed);
+        }
+      } catch {
+        localStorage.removeItem('chatAuthUser');
+      }
+    }
+  }, []);
+
   // Keep ref in sync with state for use in socket callbacks
   useEffect(() => {
     selectedRoomRef.current = selectedRoom;
@@ -185,9 +200,10 @@ export const ChatInterface: React.FC = () => {
   };
 
   const handleCreateRoom = async () => {
-    if (!newRoomName.trim()) return;
+    const sanitizedName = newRoomName.slice(0, 25).trim();
+    if (!sanitizedName) return;
     try {
-      const newRoom = await api.createRoom({ name: newRoomName });
+      const newRoom = await api.createRoom({ name: sanitizedName });
       setRooms([...rooms, newRoom]);
       setNewRoomName('');
     } catch (error) {
@@ -243,6 +259,7 @@ export const ChatInterface: React.FC = () => {
         : await api.login(payload);
 
       setAuthUser(user);
+      localStorage.setItem('chatAuthUser', JSON.stringify(user));
       setAuthPassword('');
       setAuthError(null);
     } catch (err: any) {
@@ -256,6 +273,7 @@ export const ChatInterface: React.FC = () => {
     setSelectedRoom(null);
     setMessages([]);
     setActiveUsers([]);
+    localStorage.removeItem('chatAuthUser');
   };
 
   return (
@@ -389,8 +407,9 @@ export const ChatInterface: React.FC = () => {
                     type="text" 
                     placeholder="Room name..."
                     value={newRoomName}
-                    onChange={(e) => setNewRoomName(e.target.value)}
+                    onChange={(e) => setNewRoomName(e.target.value.slice(0, 25))}
                     onKeyPress={(e) => e.key === 'Enter' && handleCreateRoom()}
+                    maxLength={25}
                   />
                   <button className="btn-create" onClick={handleCreateRoom}>+</button>
                 </div>
